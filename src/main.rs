@@ -1,7 +1,11 @@
 use std::{fs, env};
 use std::result::Result;
 
-use warp::Filter;
+use warp::{Filter, hyper};
+use warp::http::StatusCode;
+use std::fs::File;
+use std::io::Read;
+use warp::reply::Response;
 
 static VIDEO_PAGE_TEMPLATE: &'static str = include_str!("video.html");
 
@@ -26,19 +30,42 @@ async fn main() {
         .and(warp::path("stream"))
         .and(warp::path::param::<String>())
         .and(warp::header::optional::<String>("range"))
-        .map(|name: String, range: Option<String>| {
-            let range_val = match range {
-                Some(range) => { range }
-                None => { "Not present.".to_string() }
-            };
-            format!("Name: {}, range: {}", name, range_val)
-        });
+        .and_then(get_file_bytes);
+        // .map(|name: String, range: Option<String>| {
+        //     return match range {
+        //         Some(range) => {
+        //             let bytes = read_file_range(&root_dir,name,range);
+        //             Ok(hyper::Body::from(bytes))
+        //         }
+        //         None => {
+        //             panic!("TODO")
+        //         }
+        //     };
+        //
+        // });
 
     println!("Server starting!");
     warp::serve(file_list.or(stream).or(video_page))
         .run(([127, 0, 0, 1], 8080))
         .await;
 }
+
+async fn get_file_bytes(name: String, range: Option<String>) -> Result<impl warp::Reply, std::convert::Infallible> {
+    //todo continue from here
+    let bytes = read_file_range("ddd",name,range.expect("xxx"));
+    Ok(bytes)
+}
+
+fn read_file_range(root_dir: &str,file_name: String, _range: String) -> Vec<u8> {
+
+    let mut f = File::open(&file_name).expect("no file found");
+    let metadata = fs::metadata(&file_name).expect("unable to read metadata");
+    let mut buffer = vec![0; metadata.len() as usize];
+    f.read(&mut buffer).expect("buffer overflow");
+    buffer
+
+}
+
 
 fn video_html(file_name: String) -> String {
     return VIDEO_PAGE_TEMPLATE.replace("{file_name}",&file_name);
