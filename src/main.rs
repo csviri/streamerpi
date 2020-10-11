@@ -1,23 +1,27 @@
-use std::{fs, env};
-use std::result::Result;
-
-use warp::{Filter, hyper};
-use warp::http::StatusCode;
+use std::{env, fs};
 use std::fs::File;
 use std::io::Read;
-use warp::reply::Response;
+use std::path::PathBuf;
+use std::result::Result;
+
+use warp::{Filter};
 
 static VIDEO_PAGE_TEMPLATE: &'static str = include_str!("video.html");
+
+// todo reading file as async
 
 #[tokio::main]
 async fn main() {
     let args: Vec<String> = env::args().collect();
-    let root_dir = args.get(1).expect("Root directory argument expected.").to_string();
 
-    println!("Root dir: {}",root_dir);
+    let root_dir = args.get(1).expect("Root directory argument expected.").to_string();
+    // todo is there no better way?
+    let root_clone = root_dir.clone();
+    println!("Root dir: {}", root_dir);
+
 
     let file_list = warp::path::end()
-        .map(move || warp::reply::html(list_files_to_html(&root_dir)));
+        .map(move || warp::reply::html(list_files_to_html(&root_clone)));
 
     let video_page = warp::get()
         .and(warp::path("video"))
@@ -30,19 +34,18 @@ async fn main() {
         .and(warp::path("stream"))
         .and(warp::path::param::<String>())
         .and(warp::header::optional::<String>("range"))
-        .and_then(get_file_bytes);
-        // .map(|name: String, range: Option<String>| {
-        //     return match range {
-        //         Some(range) => {
-        //             let bytes = read_file_range(&root_dir,name,range);
-        //             Ok(hyper::Body::from(bytes))
-        //         }
-        //         None => {
-        //             panic!("TODO")
-        //         }
-        //     };
-        //
-        // });
+        // .and_then(get_file_bytes);
+        .map(move |name: String, range: Option<String>| {
+            match range {
+                Some(range) => {
+                    let bytes = read_file_range(&root_dir, name, range);
+                    return bytes;
+                }
+                None => {
+                    panic!("TODO")
+                }
+            };
+        });
 
     println!("Server starting!");
     warp::serve(file_list.or(stream).or(video_page))
@@ -50,25 +53,23 @@ async fn main() {
         .await;
 }
 
-async fn get_file_bytes(name: String, range: Option<String>) -> Result<impl warp::Reply, std::convert::Infallible> {
-    //todo continue from here
-    let bytes = read_file_range("ddd",name,range.expect("xxx"));
-    Ok(bytes)
-}
+fn read_file_range(root_dir: &str, file_name: String, _range: String) -> Vec<u8> {
 
-fn read_file_range(root_dir: &str,file_name: String, _range: String) -> Vec<u8> {
+    // todo respect range header
 
-    let mut f = File::open(&file_name).expect("no file found");
-    let metadata = fs::metadata(&file_name).expect("unable to read metadata");
+    let mut path = PathBuf::new();
+    path.push(root_dir);
+    path.push(file_name);
+
+    let mut f = File::open(&path).expect("no file found");
+    let metadata = fs::metadata(&path).expect("unable to read metadata");
     let mut buffer = vec![0; metadata.len() as usize];
     f.read(&mut buffer).expect("buffer overflow");
     buffer
-
 }
 
-
 fn video_html(file_name: String) -> String {
-    return VIDEO_PAGE_TEMPLATE.replace("{file_name}",&file_name);
+    return VIDEO_PAGE_TEMPLATE.replace("{file_name}", &file_name);
 }
 
 fn list_files_to_html(root_dir: &str) -> String {
