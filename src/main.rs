@@ -1,14 +1,26 @@
-use std::fs;
+use std::{fs, env};
 use std::result::Result;
 
 use warp::Filter;
 
+static VIDEO_PAGE_TEMPLATE: &'static str = include_str!("video.html");
+
 #[tokio::main]
 async fn main() {
-    const DIR: &str = ".";
+    let args: Vec<String> = env::args().collect();
+    let root_dir = args.get(1).expect("Root directory argument expected.").to_string();
 
-    let file_list = warp::path!("files")
-        .map(|| warp::reply::html(list_files_to_html(DIR)));
+    println!("Root dir: {}",root_dir);
+
+    let file_list = warp::path::end()
+        .map(move || warp::reply::html(list_files_to_html(&root_dir)));
+
+    let video_page = warp::get()
+        .and(warp::path("video"))
+        .and(warp::path::param::<String>())
+        .map(|file_name: String| {
+            warp::reply::html(video_html(file_name))
+        });
 
     let stream = warp::get()
         .and(warp::path("stream"))
@@ -23,25 +35,28 @@ async fn main() {
         });
 
     println!("Server starting!");
-    warp::serve(file_list.or(stream))
-
-        .run(([127, 0, 0, 1], 3030))
+    warp::serve(file_list.or(stream).or(video_page))
+        .run(([127, 0, 0, 1], 8080))
         .await;
 }
 
-fn list_files_to_html(dir: &str) -> String {
+fn video_html(file_name: String) -> String {
+    return VIDEO_PAGE_TEMPLATE.replace("{file_name}",&file_name);
+}
+
+fn list_files_to_html(root_dir: &str) -> String {
     let mut result: String = String::new();
     result.push_str("<html><body><ul>");
-    let dir = fs::read_dir(dir);
+    let dir = fs::read_dir(root_dir);
     match dir {
-        Result::Err(_) => { result.push_str("ERROR!! : ") }
+        Result::Err(_) => { result.push_str(format!("ERROR Reading dir: {}", root_dir).as_str()) }
         Result::Ok(read_dir) => {
             for entry in read_dir {
                 match entry {
                     Ok(dir_entry) => {
                         let file = dir_entry.file_name();
                         match file.to_str() {
-                            Some(file) => { result.push_str(format!("<li>{}</li>", file).as_str()) }
+                            Some(file) => { result.push_str(format!("<li><a href=\"/video/{}\">{}</a></li>", file, file).as_str()) }
                             None => {}
                         }
                     }
