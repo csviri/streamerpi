@@ -1,14 +1,14 @@
 use std::{env, fs};
-use std::fs::File;
+use std::fs::{DirEntry, File};
 use std::io::Read;
 use std::path::PathBuf;
 use std::result::Result;
 
-use warp::{Filter};
+use warp::Filter;
 
 static VIDEO_PAGE_TEMPLATE: &'static str = include_str!("video.html");
 
-// todo reading file as async
+// todo reading file as async?
 
 #[tokio::main]
 async fn main() {
@@ -17,11 +17,16 @@ async fn main() {
     let root_dir = args.get(1).expect("Root directory argument expected.").to_string();
     // todo is there no better way?
     let root_clone = root_dir.clone();
+    let root_clone2 = root_dir.clone();
     println!("Root dir: {}", root_dir);
-
 
     let file_list = warp::path::end()
         .map(move || warp::reply::html(list_files_to_html(&root_clone)));
+
+    let dir_view = warp::get()
+        .and(warp::path("dir"))
+        .and(warp::path::param::<String>())
+        .map(move |dir: String| warp::reply::html(list_files_to_html(format!("{}/{}", root_clone2, dir).as_str())));
 
     let video_page = warp::get()
         .and(warp::path("video"))
@@ -47,8 +52,8 @@ async fn main() {
             };
         });
 
-    println!("Server starting!");
-    warp::serve(file_list.or(stream).or(video_page))
+    println!("Server up!");
+    warp::serve(file_list.or(stream).or(video_page).or(dir_view))
         .run(([127, 0, 0, 1], 8080))
         .await;
 }
@@ -72,20 +77,22 @@ fn video_html(file_name: String) -> String {
     return VIDEO_PAGE_TEMPLATE.replace("{file_name}", &file_name);
 }
 
-fn list_files_to_html(root_dir: &str) -> String {
+
+fn list_files_to_html(path_to_dir: &str) -> String {
     let mut result: String = String::new();
     result.push_str("<html><body><ul>");
-    let dir = fs::read_dir(root_dir);
+    let dir = fs::read_dir(path_to_dir);
     match dir {
-        Result::Err(_) => { result.push_str(format!("ERROR Reading dir: {}", root_dir).as_str()) }
+        Result::Err(_) => { result.push_str(format!("ERROR Reading dir: {}", path_to_dir).as_str()) }
         Result::Ok(read_dir) => {
             for entry in read_dir {
                 match entry {
                     Ok(dir_entry) => {
-                        let file = dir_entry.file_name();
-                        match file.to_str() {
-                            Some(file) => { result.push_str(format!("<li><a href=\"/video/{}\">{}</a></li>", file, file).as_str()) }
-                            None => {}
+                        match dir_entry_to_html(dir_entry) {
+                            Ok(entry) => {
+                                result.push_str(entry.as_str());
+                            }
+                            Err(_) => {}
                         }
                     }
                     Err(err) => eprintln!("Error: {}", err)
@@ -95,4 +102,22 @@ fn list_files_to_html(root_dir: &str) -> String {
     }
     result.push_str("</ul></body></html>");
     return result;
+}
+
+fn dir_entry_to_html(dir_entry: DirEntry) -> Result<String, std::io::Error> {
+    let file = dir_entry.file_name();
+    let meta = dir_entry.metadata()?;
+
+    match file.to_str() {
+        Some(name) => {
+            if meta.is_file() {
+                return Ok(format!("<li><a href=\"/video/{}\">{}</a></li>", name, name));
+            }
+            if meta.is_dir() {
+                return Ok(format!("<li><a href=\"/dir/{}\">[ {} ]</a></li>", name, name));
+            }
+            return Ok(String::new());
+        }
+        None => { return Ok(String::new()); }
+    }
 }
