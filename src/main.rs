@@ -46,9 +46,7 @@ async fn main() {
                     let bytes = read_file_range(&root_dir, name, range);
                     return bytes;
                 }
-                None => {
-                    panic!("TODO")
-                }
+                None => { panic!("TODO") }
             };
         });
 
@@ -59,12 +57,11 @@ async fn main() {
 }
 
 fn read_file_range(root_dir: &str, file_name: String, _range: String) -> Vec<u8> {
-
     // todo respect range header
-
     let mut path = PathBuf::new();
     path.push(root_dir);
     path.push(file_name);
+
 
     let mut f = File::open(&path).expect("no file found");
     let metadata = fs::metadata(&path).expect("unable to read metadata");
