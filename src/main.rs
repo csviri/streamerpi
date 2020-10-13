@@ -4,7 +4,8 @@ use std::io::Read;
 use std::path::PathBuf;
 use std::result::Result;
 
-use warp::Filter;
+use warp::{Filter};
+use streampi::stream::video::VideoStream;
 
 static VIDEO_PAGE_TEMPLATE: &'static str = include_str!("video.html");
 
@@ -44,7 +45,7 @@ async fn main() {
             match range {
                 Some(range) => {
                     let bytes = read_file_range(&root_dir, name, range);
-                    return bytes;
+                    return VideoStream { bytes };
                 }
                 None => { panic!("TODO") }
             };
@@ -104,8 +105,7 @@ fn list_files_to_html(path_to_dir: &str) -> String {
 fn dir_entry_to_html(dir_entry: DirEntry) -> Result<String, std::io::Error> {
     let file = dir_entry.file_name();
     let meta = dir_entry.metadata()?;
-
-    match file.to_str() {
+    return match file.to_str() {
         Some(name) => {
             if meta.is_file() {
                 return Ok(format!("<li><a href=\"/video/{}\">{}</a></li>", name, name));
@@ -113,8 +113,8 @@ fn dir_entry_to_html(dir_entry: DirEntry) -> Result<String, std::io::Error> {
             if meta.is_dir() {
                 return Ok(format!("<li><a href=\"/dir/{}\">[ {} ]</a></li>", name, name));
             }
-            return Ok(String::new());
+            Ok(String::new())
         }
-        None => { return Ok(String::new()); }
-    }
+        None => { Ok(String::new()) }
+    };
 }

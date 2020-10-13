@@ -1,7 +1,8 @@
+use crate::stream::range::Range;
 
 #[test]
 fn range_with_open_end() {
-    let res = Range::parse_range(String::from("bytes=0-")).unwrap();
+    let res: Range = Range::parse_range(String::from("bytes=0-")).unwrap();
     assert_eq!(0, res.start);
     assert!(res.end.is_none());
 
