@@ -4,7 +4,7 @@ A tiny hobby project to learn rust and stream videos from my raspberry pi :)
 
 ## Run
 
-`./strampi ~/dir_with_my_movies`
+`./streampi ~/dir_with_my_movies`
 
 ## What does it do
 - Exposes the configured dir and sub-dirs through a minimalistic web page
