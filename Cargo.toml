@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 tokio = { version = "0.2", features = ["full"] }
 warp = "0.2"
+urlencoding = "1.1"
