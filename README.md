@@ -8,7 +8,7 @@ A tiny hobby project to learn rust and stream videos from my raspberry pi :)
 
 ## What does it do
 - Exposes the configured dir and sub-dirs through a minimalistic web page
-- Streams (don't transcode) videos through html5 video   
+- Streams (don't transcode - so its kinda limited) videos through html5 video   
 
 Tested on Linux + Chrome.
 
