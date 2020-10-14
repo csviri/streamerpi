@@ -70,6 +70,6 @@ async fn main() {
 
     println!("Server up! On port: {}!", 8080);
     warp::serve(file_list.or(stream).or(video_page).or(dir_view))
-        .run(([127, 0, 0, 1], 8080)) // todo port as param
+        .run(([0, 0, 0, 0], 8080)) // todo port as param
         .await;
 }
