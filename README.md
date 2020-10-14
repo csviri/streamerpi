@@ -1,6 +1,6 @@
 # streampi
 
-A tiny hobby project to learn rust and stream videos from my raspberry pi :)
+A tiny pet project to learn rust and stream videos from my raspberry pi :)
 
 ## Run
 
