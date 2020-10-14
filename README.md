@@ -7,8 +7,8 @@ A tiny hobby project to learn/practice rust and stream videos from my raspberry 
 `./strampi ~/dir_with_my_movies`
 
 ## What does it do
-- Exposes the configured dir and sub-dirs though a minimalistic web page
-- Streams (don't transcode) videos through html5   
+- Exposes the configured dir and sub-dirs through a minimalistic web page
+- Streams (don't transcode) videos through html5 video   
 
 Tested on Linux + Chrome.
 
