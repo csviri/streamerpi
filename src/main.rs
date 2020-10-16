@@ -1,9 +1,9 @@
 use std::{env};
 use std::path::PathBuf;
 use warp::Filter;
-use streampi::stream::range::Range;
-use streampi::stream::video::{read_file_range_to_video_stream};
-use streampi::browse::dir::{list_files_to_html, video_html};
+use streamerpi::stream::range::Range;
+use streamerpi::stream::video::{read_file_range_to_video_stream};
+use streamerpi::browse::dir::{list_files_to_html, video_html};
 use urlencoding::decode;
 
 // todo reading file as async?
