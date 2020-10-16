@@ -18,7 +18,7 @@ pub fn list_files_to_html(root_dir: &str, sub_dir_path: &str) -> String {
 
     let dir = fs::read_dir(path);
     match dir {
-        Result::Err(_) => { result.push_str(format!("ERROR Reading dir: {}", root_dir).as_str()) }
+        Result::Err(_) => { result.push_str(format!("ERROR Reading dir: {}/{}", root_dir, sub_dir_path).as_str()) }
         Result::Ok(read_dir) => {
             for entry in read_dir {
                 match entry {
