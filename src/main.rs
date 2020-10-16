@@ -6,9 +6,12 @@ use streamerpi::stream::video::{read_file_range_to_video_stream};
 use streamerpi::browse::dir::{list_files_to_html, video_html};
 use urlencoding::decode;
 
-// todo reading file as async?
+//  TODO
+// - reading file as async?
+// - error handling
+// - this goes away with real streaming
 
-// todo this goes away with real streaming
+
 const MAX_STREAM_RESPONSE_SIZE: u64 = 2621440;
 
 
