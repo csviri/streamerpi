@@ -2,12 +2,27 @@ use std::fs;
 use std::fs::DirEntry;
 use std::path::PathBuf;
 use urlencoding::encode;
+use core::fmt;
 
 static VIDEO_PAGE_TEMPLATE: &'static str = include_str!("video.html");
 
 #[derive(Debug)]
-enum BrowseError {
+pub enum BrowseError {
     IoError(std::io::Error)
+}
+
+impl fmt::Display for BrowseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            BrowseError::IoError(ref e) => e.fmt(f),
+        }
+    }
+}
+
+impl From<std::io::Error> for BrowseError {
+    fn from(err: std::io::Error) -> BrowseError {
+        BrowseError::IoError(err)
+    }
 }
 
 // from errpr
@@ -36,7 +51,7 @@ pub fn list_files_to_html(root_dir: &str, sub_dir_path: &str) -> Result<String, 
     return Ok(result);
 }
 
-fn entry_to_html(dir_entry: DirEntry, sub_dir_path: &str) -> Result<String, std::io::Error> {
+fn entry_to_html(dir_entry: DirEntry, sub_dir_path: &str) -> Result<String, BrowseError> {
     let file = dir_entry.file_name();
     let meta = dir_entry.metadata()?;
     return match file.to_str() {

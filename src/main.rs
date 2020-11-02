@@ -1,10 +1,11 @@
 use std::{env};
 use std::path::PathBuf;
-use warp::Filter;
+use warp::{Filter, Reply};
 use streamerpi::stream::range::Range;
 use streamerpi::stream::video::{read_file_range_to_video_stream};
 use streamerpi::browse::dir::{list_files_to_html, video_html};
 use urlencoding::decode;
+use warp::http::StatusCode;
 
 //  TODO
 // - reading file as async?
@@ -26,16 +27,32 @@ async fn main() {
     println!("Root dir: {}", root_dir);
 
     let file_list = warp::path::end()
-        .map(move || warp::reply::html(list_files_to_html(&root_clone, "")));
+        .map(move || {
+            match list_files_to_html(&root_clone, "") {
+                Ok(html) => {
+                    warp::reply::html(html).into_response()
+                }
+                Err(err) => {
+                    eprintln!("error: {}", err);
+                    warp::reply::with_status(err.to_string(), StatusCode::INTERNAL_SERVER_ERROR).into_response()
+                }
+            }
+        });
 
     let dir_view = warp::get()
         .and(warp::path("dir"))
         .and(warp::path::param::<String>())
         .map(move |dir: String| {
-            // todo error
             let decoded_dir = decode(dir.as_str()).unwrap();
-            let html = list_files_to_html(root_clone2.as_str(), decoded_dir.as_str());
-            warp::reply::html(html)
+            match list_files_to_html(root_clone2.as_str(), decoded_dir.as_str()) {
+                Ok(html) => {
+                    warp::reply::html(html).into_response()
+                }
+                Err(err) => {
+                    eprintln!("error: {}", err);
+                    warp::reply::with_status(err.to_string(), StatusCode::INTERNAL_SERVER_ERROR).into_response()
+                }
+            }
         });
 
     let video_page = warp::get()
