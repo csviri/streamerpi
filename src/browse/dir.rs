@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, error};
 use std::fs::DirEntry;
 use std::path::PathBuf;
 use urlencoding::encode;
@@ -25,13 +25,21 @@ impl From<std::io::Error> for BrowseError {
     }
 }
 
-// from errpr
+impl error::Error for BrowseError {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+        match *self {
+            BrowseError::IoError(ref e) => Some(e),
+        }
+    }
+}
+
+pub type Result<T> = std::result::Result<T, BrowseError>;
 
 pub fn video_html(encoded_file_path: String) -> String {
     return VIDEO_PAGE_TEMPLATE.replace("{file_name}", &encoded_file_path);
 }
 
-pub fn list_files_to_html(root_dir: &str, sub_dir_path: &str) -> Result<String, BrowseError> {
+pub fn list_files_to_html(root_dir: &str, sub_dir_path: &str) -> Result<String> {
     let mut result: String = String::new();
     result.push_str("<html><body><ul>");
     let mut path = PathBuf::from(root_dir);
@@ -39,19 +47,15 @@ pub fn list_files_to_html(root_dir: &str, sub_dir_path: &str) -> Result<String, 
 
     let dir = fs::read_dir(path)?;
     for entry in dir {
-        match entry {
-            Ok(dir_entry) => {
-                let entry = entry_to_html(dir_entry, sub_dir_path)?;
-                result.push_str(entry.as_str());
-            }
-            Err(err) => eprintln!("Error: {}", err)
-        }
+        let dir_entry = entry?;
+        let entry_html = entry_to_html(dir_entry, sub_dir_path)?;
+        result.push_str(entry_html.as_str());
     }
     result.push_str("</ul></body></html>");
     return Ok(result);
 }
 
-fn entry_to_html(dir_entry: DirEntry, sub_dir_path: &str) -> Result<String, BrowseError> {
+fn entry_to_html(dir_entry: DirEntry, sub_dir_path: &str) -> Result<String> {
     let file = dir_entry.file_name();
     let meta = dir_entry.metadata()?;
     return match file.to_str() {

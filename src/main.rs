@@ -19,8 +19,8 @@ const MAX_STREAM_RESPONSE_SIZE: u64 = 2621440;
 #[tokio::main]
 async fn main() {
     let args: Vec<String> = env::args().collect();
-
     let root_dir = args.get(1).expect("Root directory argument expected.").to_string();
+
     // todo is there no better way?
     let root_clone = root_dir.clone();
     let root_clone2 = root_dir.clone();
