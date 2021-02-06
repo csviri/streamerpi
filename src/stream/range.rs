@@ -1,7 +1,6 @@
 use std::{error, fmt};
 use error::Error;
 use std::num::ParseIntError;
-use crate::stream::range::RangeParseError::MalformedRangeError;
 
 pub struct Range {
     pub start: u64,
@@ -15,21 +14,21 @@ pub struct MalformedRangeError {
 
 #[derive(Debug)]
 pub enum RangeParseError {
-    RangeAttribParseError(ParseIntError),
-    MalformedRangeError(String)
+    RangeEndParseError(ParseIntError),
+    MalformedRangeError(String),
 }
 
 impl From<ParseIntError> for RangeParseError {
     fn from(err: ParseIntError) -> RangeParseError {
-        RangeParseError::RangeAttribParseError(err)
+        RangeParseError::RangeEndParseError(err)
     }
 }
 
 impl Error for RangeParseError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match *self {
-            RangeParseError::RangeAttribParseError(ref e) => {Some(e)}
-            RangeParseError::MalformedRangeError(s)=> {Some(self)}
+            RangeParseError::RangeEndParseError(ref e) => { Some(e) }
+            RangeParseError::MalformedRangeError(ref _s) => { None }
         }
     }
 }
@@ -37,11 +36,13 @@ impl Error for RangeParseError {
 impl fmt::Display for RangeParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            _ => e.fmt(f),
+            RangeParseError::RangeEndParseError(ref e) => e.fmt(f),
+            RangeParseError::MalformedRangeError(ref s) => {
+                write!(f, "{}", *s)
+            }
         }
     }
 }
-
 
 
 impl Range {
@@ -56,12 +57,12 @@ impl Range {
                     if interval.chars().count() == pos + 1 {
                         None
                     } else {
-                        Some(interval[pos+1..interval.len()].parse::<u64>()?)
+                        Some(interval[pos + 1..interval.len()].parse::<u64>()?)
                     };
                 Ok(Range { start, end })
             }
             None => {
-                Result::Err(MalformedRangeError("".to_string()))
+                Result::Err(RangeParseError::MalformedRangeError { 0: range_header })
             }
         };
     }
