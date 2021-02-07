@@ -8,24 +8,21 @@ use urlencoding::{decode};
 use warp::http::StatusCode;
 use warp::reply::Response;
 
-//  TODO
+// todo
 // - reading file as async?
-// - error handling
-// - this goes away with real streaming
-
+// - standard html file streaming with open connections
 
 const MAX_STREAM_RESPONSE_SIZE: u64 = 2621440;
-
 
 #[tokio::main]
 async fn main() {
     let args: Vec<String> = env::args().collect();
     let root_dir = args.get(1).expect("Root directory argument expected.").to_string();
-
-    // todo is there no better way?
+    println!("Root dir: {}", root_dir);
+    // is there no better way than the cloning?
     let root_clone = root_dir.clone();
     let root_clone2 = root_dir.clone();
-    println!("Root dir: {}", root_dir);
+
 
     let file_list = warp::path::end()
         .map(move || {
@@ -65,7 +62,6 @@ async fn main() {
         .and(warp::path("stream"))
         .and(warp::path::param::<String>())
         .and(warp::header::optional::<String>("range"))
-        // .and_then(get_file_bytes);
         .map(move |path: String, range: Option<String>| {
             return match range {
                 Some(range) => {
@@ -94,9 +90,16 @@ fn stream_movie(root_dir: &String, encoded_path: String, range: String) -> Respo
             let range_result = Range::parse_range(&range);
             match range_result {
                 Ok(range) => {
-                    read_file_range_to_video_stream(path, range,
-                                                    MAX_STREAM_RESPONSE_SIZE)
-                        .into_response()
+                     match read_file_range_to_video_stream(path, range,
+                                                    MAX_STREAM_RESPONSE_SIZE) {
+                         Ok(video_steam) => {
+                             video_steam.into_response()
+                         }
+                         Err(err) => {
+                             warp::reply::with_status(err.to_string(), StatusCode::INTERNAL_SERVER_ERROR)
+                                 .into_response()
+                         }
+                     }
                 }
                 Err(_err) => {
                     let error_message = format!("{}{}", "cannot parse range header: ", range);

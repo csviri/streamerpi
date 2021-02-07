@@ -8,27 +8,27 @@ static VIDEO_PAGE_TEMPLATE: &'static str = include_str!("video.html");
 
 #[derive(Debug)]
 pub enum BrowseError {
-    IoError(std::io::Error)
+    IOError(std::io::Error)
 }
 
 impl fmt::Display for BrowseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            BrowseError::IoError(ref e) => e.fmt(f),
+            BrowseError::IOError(ref e) => e.fmt(f),
         }
     }
 }
 
 impl From<std::io::Error> for BrowseError {
     fn from(err: std::io::Error) -> BrowseError {
-        BrowseError::IoError(err)
+        BrowseError::IOError(err)
     }
 }
 
 impl error::Error for BrowseError {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match *self {
-            BrowseError::IoError(ref e) => Some(e),
+            BrowseError::IOError(ref e) => Some(e),
         }
     }
 }
