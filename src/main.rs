@@ -4,8 +4,9 @@ use warp::{Filter, Reply};
 use streamerpi::stream::range::Range;
 use streamerpi::stream::video::{read_file_range_to_video_stream};
 use streamerpi::browse::dir::{list_files_to_html, video_html};
-use urlencoding::decode;
+use urlencoding::{decode};
 use warp::http::StatusCode;
+use warp::reply::Response;
 
 //  TODO
 // - reading file as async?
@@ -33,7 +34,6 @@ async fn main() {
                     warp::reply::html(html).into_response()
                 }
                 Err(err) => {
-                    eprintln!("error: {}", err);
                     warp::reply::with_status(err.to_string(), StatusCode::INTERNAL_SERVER_ERROR).into_response()
                 }
             }
@@ -49,7 +49,6 @@ async fn main() {
                     warp::reply::html(html).into_response()
                 }
                 Err(err) => {
-                    eprintln!("error: {}", err);
                     warp::reply::with_status(err.to_string(), StatusCode::INTERNAL_SERVER_ERROR).into_response()
                 }
             }
@@ -68,23 +67,14 @@ async fn main() {
         .and(warp::header::optional::<String>("range"))
         // .and_then(get_file_bytes);
         .map(move |path: String, range: Option<String>| {
-            match range {
+            return match range {
                 Some(range) => {
-                    // todo error handling
-                    let decoded_path = decode(path.as_str()).unwrap();
-                    let mut path = PathBuf::new();
-                    path.push(&root_dir);
-                    path.push(decoded_path);
-                    let range_result = Range::parse_range(range);
-                    match range_result {
-                        Ok(range) => {
-                            return read_file_range_to_video_stream(path, range, MAX_STREAM_RESPONSE_SIZE);
-                        }
-                        // todo error handling
-                        Err(err) => { panic!(err) }
-                    }
+                    return stream_movie(&root_dir, path, range);
                 }
-                None => { panic!("TODO") }
+                None => {
+                    warp::reply::with_status("missing range header",
+                                             StatusCode::BAD_REQUEST).into_response()
+                }
             };
         });
 
@@ -93,3 +83,32 @@ async fn main() {
         .run(([0, 0, 0, 0], 8080)) // todo port as param
         .await;
 }
+
+fn stream_movie(root_dir: &String, encoded_path: String, range: String) -> Response {
+    let decoded_path = decode(encoded_path.as_str());
+    match decoded_path {
+        Ok(p) => {
+            let mut path = PathBuf::new();
+            path.push(root_dir);
+            path.push(p);
+            let range_result = Range::parse_range(&range);
+            match range_result {
+                Ok(range) => {
+                    read_file_range_to_video_stream(path, range,
+                                                    MAX_STREAM_RESPONSE_SIZE)
+                        .into_response()
+                }
+                Err(_err) => {
+                    let error_message = format!("{}{}", "cannot parse range header: ", range);
+                    warp::reply::with_status(error_message, StatusCode::BAD_REQUEST)
+                        .into_response()
+                }
+            }
+        }
+        Err(_) => {
+            warp::reply::with_status("path decode error",
+                                     StatusCode::BAD_REQUEST).into_response()
+        }
+    }
+}
+

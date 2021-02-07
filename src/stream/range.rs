@@ -46,7 +46,7 @@ impl fmt::Display for RangeParseError {
 
 
 impl Range {
-    pub fn parse_range(range_header: String) -> Result<Range, RangeParseError> {
+    pub fn parse_range(range_header: &String) -> Result<Range, RangeParseError> {
         let interval = range_header.replace("bytes=", "");
         let divider = interval.find("-");
 
@@ -62,7 +62,7 @@ impl Range {
                 Ok(Range { start, end })
             }
             None => {
-                Result::Err(RangeParseError::MalformedRangeError { 0: range_header })
+                Result::Err(RangeParseError::MalformedRangeError { 0: range_header.clone() })
             }
         };
     }
