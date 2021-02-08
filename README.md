@@ -10,7 +10,7 @@ A tiny pet project to learn rust and stream videos from my raspberry pi :)
 - Exposes the configured dir and sub-dirs through a minimalistic web page
 - Streams (don't transcode - so its kinda limited) videos through html5 video   
 
-Tested on Ubuntu, Rapsberry Pi + Chrome.
+Tested on Ubuntu, Rapsberry Pi 2 + Chrome.
 
 ## Cross Compile to Pi
 this worked with some minor tweaks:
